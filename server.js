@@ -60,7 +60,7 @@ app.post('/api/location', (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Fallback for SPA routing
-app.get('(.*)', (req, res) => {
+app.get('/:path*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
