@@ -26,7 +26,7 @@ function App() {
             console.log("Location obtained:", position.coords.latitude, position.coords.longitude);
             
             // Kirim ke backend (SQLite)
-            fetch('http://localhost:3001/api/location', {
+            fetch('/api/location', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -129,7 +129,11 @@ function App() {
         <div className="flex items-center justify-center space-x-2 text-slate-400 text-xs">
           <CheckCircle2 size={14} className="text-green-500" />
           <span>Transaksi Aman & Terverifikasi</span>
-          {coords && <MapPin size={14} className="ml-2 text-blue-500" title={`Lokasi: ${coords.lat}, ${coords.lng}`} />}
+          {coords && (
+            <span title={`Lokasi: ${coords.lat}, ${coords.lng}`}>
+              <MapPin size={14} className="ml-2 text-blue-500" />
+            </span>
+          )}
         </div>
       </div>
     </div>

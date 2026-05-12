@@ -56,6 +56,13 @@ app.post('/api/location', (req, res) => {
   });
 });
 
+// Serve static frontend files (React Build)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
