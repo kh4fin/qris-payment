@@ -1,5 +1,5 @@
 import express from 'express';
-import sqlite3 from 'sqlite3';
+import Database from 'better-sqlite3';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,50 +14,46 @@ const port = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Initialize SQLite Database
-// Gunakan path absolut untuk memastikan database bisa diakses saat deploy di VPS
+// Initialize Better-SQLite3 Database
 const dbPath = path.resolve(__dirname, 'locations.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-    // Create table if not exists
-    db.run(`
-      CREATE TABLE IF NOT EXISTS locations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        lat REAL NOT NULL,
-        lng REAL NOT NULL,
-        user_agent TEXT,
-        ip_address TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `, (err) => {
-      if (err) console.error('Error creating table:', err);
-    });
-  }
-});
+const db = new Database(dbPath);
+console.log('Connected to Better-SQLite3 database at:', dbPath);
+
+// Create table if not exists
+db.exec(`
+  CREATE TABLE IF NOT EXISTS locations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    user_agent TEXT,
+    ip_address TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
 // API Endpoint to receive location
 app.post('/api/location', (req, res) => {
   const { lat, lng } = req.body;
   const userAgent = req.headers['user-agent'] || 'Unknown';
-  // Ambil IP dari proxy jika ada (seperti Nginx di VPS)
   const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
   if (!lat || !lng) {
     return res.status(400).json({ error: 'Latitude and longitude are required' });
   }
 
-  const query = `INSERT INTO locations (lat, lng, user_agent, ip_address) VALUES (?, ?, ?, ?)`;
-  db.run(query, [lat, lng, userAgent, ipAddress], function(err) {
-    if (err) {
-      console.error('Error inserting location:', err);
-      return res.status(500).json({ error: 'Failed to save location' });
-    }
-    console.log(`Location saved: ID ${this.lastID}, Lat ${lat}, Lng ${lng}`);
-    res.status(200).json({ success: true, id: this.lastID });
-  });
+  try {
+    const insert = db.prepare(`
+      INSERT INTO locations (lat, lng, user_agent, ip_address) 
+      VALUES (?, ?, ?, ?)
+    `);
+    const info = insert.run(lat, lng, userAgent, ipAddress);
+    
+    console.log(`Location saved: ID ${info.lastInsertRowid}, Lat ${lat}, Lng ${lng}`);
+    res.status(200).json({ success: true, id: Number(info.lastInsertRowid) });
+  } catch (err) {
+    console.error('Error inserting location:', err);
+    res.status(500).json({ error: 'Failed to save location' });
+  }
 });
 
 // Serve static frontend files (React Build)
