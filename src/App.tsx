@@ -3,7 +3,7 @@ import { QrCode, ShieldCheck, MapPin, CheckCircle2 } from 'lucide-react';
 
 function App() {
   const [isVerifying, setIsVerifying] = useState(true);
-  const [locationStatus, setLocationStatus] = useState<string>('Memverifikasi sistem keamanan...');
+  const [locationStatus, setLocationStatus] = useState<React.ReactNode>('Memverifikasi sistem keamanan...');
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
 
   const [error, setError] = useState<React.ReactNode | null>(null);
