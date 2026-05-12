@@ -6,7 +6,7 @@ function App() {
   const [locationStatus, setLocationStatus] = useState<string>('Memverifikasi sistem keamanan...');
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<React.ReactNode | null>(null);
 
   const requestLocation = () => {
     setError(null);
@@ -34,9 +34,39 @@ function App() {
         },
         (err) => {
           console.error("Error getting location", err);
-          let msg = 'Gagal memverifikasi lokasi.';
-          if (err.code === 1) msg = 'Akses lokasi ditolak. Mohon izinkan lokasi untuk melanjutkan.';
-          else if (err.code === 2) msg = 'Lokasi tidak ditemukan atau sinyal GPS lemah.';
+          let msg: React.ReactNode = 'Gagal memverifikasi lokasi.';
+          
+          if (err.code === 1) {
+            msg = (
+              <div className="space-y-4">
+                <p className="text-red-600 font-bold">Akses Lokasi Diblokir</p>
+                <div className="text-[11px] text-slate-600 text-left bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                  <p className="font-bold text-slate-800 mb-2 uppercase tracking-wider text-[10px]">Cara Mengaktifkan (HP & Laptop):</p>
+                  <ul className="space-y-2 list-none">
+                    <li className="flex gap-2">
+                      <span className="bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px]">1</span>
+                      <span>Klik ikon <b>Gembok (🔒)</b> atau ikon <b>"AA"</b> di baris alamat browser (URL).</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px]">2</span>
+                      <span>Pilih <b>"Permissions"</b> atau <b>"Website Settings"</b>.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px]">3</span>
+                      <span>Ubah <b>Lokasi/Location</b> menjadi <b>"Allow"</b> atau <b>"Izinkan"</b>.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[9px]">4</span>
+                      <span><b>Muat ulang (Reload)</b> halaman ini.</span>
+                    </li>
+                  </ul>
+                  <p className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-400 italic">
+                    *Jika masih gagal, masuk ke Pengaturan HP &gt; Aplikasi &gt; {navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome') ? 'Safari' : 'Chrome'} &gt; Izin &gt; Aktifkan Lokasi.
+                  </p>
+                </div>
+              </div>
+            );
+          } else if (err.code === 2) msg = 'Lokasi tidak ditemukan atau sinyal GPS lemah.';
           else if (err.code === 3) msg = 'Waktu verifikasi habis.';
           
           setError(msg);
